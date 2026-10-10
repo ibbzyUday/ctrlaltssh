@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ibrahim Mkumba | CtrlAltSsh // Infrastructure Portfolio</title>
+<meta name="description" content="Infrastructure portfolio of Ibrahim Mkumba: Windows Server and Active Directory, Hyper-V and VMware, AWS and Azure, FortiGate, Security+. Based in the Dallas-Irving area.">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#020402">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CtrlAltSsh">
+<meta property="og:title" content="Ibrahim Mkumba | CtrlAltSsh // Infrastructure Portfolio">
+<meta property="og:description" content="Infrastructure portfolio of Ibrahim Mkumba: Windows Server and Active Directory, Hyper-V and VMware, AWS and Azure, FortiGate, Security+. Based in the Dallas-Irving area.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23020402'/%3E%3Cpath d='M17 21l13 11-13 11M35 44h13' fill='none' stroke='%2300ff66' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script>
+/* Runs before first paint: restore a returning visitor's pill, or flag that the pill screen is needed. */
+(function(){
+  var root = document.documentElement, pill = null;
+  try { pill = localStorage.getItem('ctrlaltssh-pill'); } catch (e) {}
+  if (pill === 'red') root.setAttribute('data-theme', 'red');
+  if (pill !== 'red' && pill !== 'blue') root.className = 'gate-open gate-lock';
+})();
+</script>
+<style>
+  :root{
+    color-scheme: dark;
+    /* BLUE PILL (default) = green system. Every colour on the page comes from these tokens,
+       so a theme only has to override this block. */
+    --neon: #00ff66;    --neon-rgb: 0,255,102;
+    --soft: #4dffa0;    /* small buttons */
+    --softer: #7cffa9;  /* tagline and links */
+    --label: #2f9b61;   /* rack heading */
+    --sub: #38b572;     /* prompt line and unit sub-labels */
+    --muted: #4f9a6e;   /* footer status line */
+    --bg: #020402;      --bg-rgb: 2,4,2;
+    --panel: #0a0f0a;
+    --line: #0f3d1f;
+    --text: #c8ffdc;
+    --matrix: #00ff66;
+  }
+  /* RED PILL theme */
+  [data-theme="red"]{
+    --neon: #ff2a2a;    --neon-rgb: 255,42,42;
+    --soft: #ff7676;
+    --softer: #ffa3a3;
+    --label: #d96262;
+    --sub: #e56d6d;
+    --muted: #b86666;
+    --bg: #040202;      --bg-rgb: 4,2,2;
+    --panel: #0f0a0a;
+    --line: #3d0f0f;
+    --text: #ffdedc;
+    --matrix: #ff2a2a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  [hidden]{display:none !important;}
+  html{overflow-x:hidden;}
+  body{
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+  }
+  ::selection{background: var(--neon); color: var(--bg);}
+  :focus-visible{outline: 2px solid var(--neon); outline-offset: 3px;}
+  [tabindex="-1"]:focus{outline:none;}
+
+  canvas#matrix{
+    position:fixed; top:0; left:0;
+    width:100%; height:100%;
+    z-index:0;
+    opacity:0.35;
+    pointer-events:none;
+  }
+  .overlay-gradient{
+    position:fixed; inset:0;
+    background: radial-gradient(ellipse at center, rgba(var(--bg-rgb),0.2) 0%, rgba(var(--bg-rgb),0.9) 80%);
+    z-index:1; pointer-events:none;
+  }
+  /* The light the pointer casts on the rain: a small canvas that travels with the pointer and
+     only exists while something is lit. It sits above the dark vignette, so the pointer can
+     pick code out of the corners too, and below the page content. */
+  canvas#matrix-glow{
+    display:none;
+    position:fixed; top:0; left:0;
+    z-index:1;
+    pointer-events:none;
+  }
+  #site{
+    position:relative; z-index:2;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+  }
+  header{
+    text-align:center;
+    padding: 40px 20px 10px;
+  }
+  header h1{
+    font-size: clamp(1.1rem, 6.2vw, 2.1rem);
+    letter-spacing: 0.09em;
+    white-space: nowrap;
+    color: var(--neon);
+    text-shadow: 0 0 8px var(--neon), 0 0 20px rgba(var(--neon-rgb),0.2);
+  }
+  header .prompt{
+    color: var(--sub);
+    font-size: 0.8rem;
+    margin-top: 4px;
+  }
+  header .whoami{
+    color: var(--text);
+    font-size: 1.05rem;
+    letter-spacing: 2px;
+    margin-top: 8px;
+  }
+  header .tagline{
+    color: var(--softer);
+    margin-top: 6px;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    opacity: 0.8;
+    text-wrap: balance;
+  }
+  main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding: 30px 20px 80px;
+  }
+  #view-container{
+    width:100%;
+    max-width: 480px;
+  }
+  .rack{
+    border: 2px solid var(--line);
+    background: linear-gradient(180deg, rgba(var(--neon-rgb),0.03), rgba(0,0,0,0.4));
+    box-shadow: 0 0 25px rgba(var(--neon-rgb),0.08), inset 0 0 15px rgba(var(--neon-rgb),0.05);
+    border-radius: 6px;
+    padding: 14px;
+    position:relative;
+  }
+  .rack-view:not([hidden]) .rack{
+    animation: fadeIn 0.4s ease;
+  }
+  .rack-label{
+    text-align:center;
+    font-size: 0.75rem;
+    font-weight: normal;
+    letter-spacing: 3px;
+    color: var(--label);
+    margin-bottom: 10px;
+  }
+  .unit{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border-radius: 3px;
+    color: inherit;
+    text-decoration: none;
+    cursor:pointer;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    position:relative;
+  }
+  .unit:focus-visible, .unit:active{
+    border-color: var(--neon);
+    box-shadow: 0 0 15px rgba(var(--neon-rgb),0.4), inset 0 0 10px rgba(var(--neon-rgb),0.15);
+  }
+  .unit-label{
+    display:block;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+  .unit-sub{
+    display:block;
+    margin-top:2px;
+    font-size: 0.7rem;
+    color: var(--sub);
+  }
+  .led-row{
+    display:flex;
+    gap:5px;
+  }
+  .led{
+    width:6px; height:6px;
+    border-radius:50%;
+    background: var(--neon);
+    box-shadow: 0 0 6px var(--neon);
+    animation: blink 2.4s infinite;
+  }
+  .led:nth-child(2){animation-delay: 0.6s;}
+  .led:nth-child(3){animation-delay: 1.2s;}
+  @keyframes blink{
+    0%,100%{opacity:1;}
+    50%{opacity:0.15;}
+  }
+  /* The sweep stays inside the rack and never sits between the pointer and a link. */
+  .scan{
+    position:absolute; inset:0;
+    overflow:hidden;
+    border-radius: 4px;
+    pointer-events:none;
+  }
+  .scanline{
+    width:100%; height:100%;
+    background: linear-gradient(90deg, transparent, rgba(var(--neon-rgb),0.08), transparent);
+    transform: translateX(-100%);
+    animation: scan 3.5s linear infinite;
+  }
+  @keyframes scan{
+    to{ transform: translateX(100%); }
+  }
+  .back-btn, .ghost-btn{
+    display:inline-block;
+    font: inherit;
+    font-size: 0.75rem;
+    letter-spacing:2px;
+    color: var(--soft);
+    text-decoration: none;
+    cursor:pointer;
+    border: 1px solid var(--line);
+    padding: 6px 12px;
+    border-radius: 3px;
+    background: var(--panel);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .back-btn{margin-bottom:14px;}
+  .content-box{
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 14px;
+    margin-bottom: 8px;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--text);
+  }
+  .content-box h3{
+    color: var(--neon);
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    text-shadow: 0 0 6px rgba(var(--neon-rgb),0.2);
+  }
+  .content-box a{
+    color: var(--softer);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+  footer{
+    text-align:center;
+    padding: 20px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+  }
+  footer .status{text-wrap: balance;}
+  footer .ghost-btn{margin-top: 12px; font-size: 0.7rem;}
+
+  /* Hover effects only where there is a real pointer, so they don't stick after a tap. */
+  @media (hover:hover){
+    .unit:hover{
+      border-color: var(--neon);
+      box-shadow: 0 0 15px rgba(var(--neon-rgb),0.4), inset 0 0 10px rgba(var(--neon-rgb),0.15);
+      transform: translateX(4px);
+    }
+    .back-btn:hover, .ghost-btn:hover{
+      border-color: var(--neon);
+      box-shadow: 0 0 10px rgba(var(--neon-rgb),0.3);
+    }
+    .pill:hover{ transform: scale(1.06); }
+    .pill-blue:hover{ box-shadow: 0 0 28px rgba(30,111,224,0.8), inset 0 0 12px rgba(255,255,255,0.25); }
+    .pill-red:hover{ box-shadow: 0 0 28px rgba(224,30,30,0.8), inset 0 0 12px rgba(255,255,255,0.25); }
+  }
+  /* Bigger tap targets on touch screens. */
+  @media (pointer:coarse){
+    .back-btn, .ghost-btn{ padding: 12px 14px; }
+  }
+
+  /* ---------- Pill selection screen ---------- */
+  #pill-screen{
+    position:fixed; inset:0; z-index:50;
+    display:none; flex-direction:column;
+    align-items:center; justify-content:center;
+    background: var(--bg);
+    text-align:center;
+    padding: 24px;
+    transition: opacity 0.6s ease;
+    touch-action: pinch-zoom;   /* no dragging the page around behind the pills; zoom still allowed */
+    overscroll-behavior: contain;
+  }
+  .gate-open #pill-screen{ display:flex; }
+  html.gate-lock{ overflow:hidden; }   /* the page behind cannot be scrolled while the pills are up */
+  #pill-screen.gone{ opacity:0; }   /* still catches clicks while it fades, so a double-click on a pill can't hit the rack underneath */
+  .pill-prompt{
+    color: var(--sub);
+    font-size: 0.85rem;
+    letter-spacing:2px;
+    margin-bottom:6px;
+  }
+  .pill-title{
+    color: var(--neon);
+    font-size: clamp(1.2rem, 6vw, 1.6rem);
+    font-weight: normal;
+    letter-spacing:3px;
+    text-shadow: 0 0 8px var(--neon), 0 0 20px rgba(var(--neon-rgb),0.2);
+    margin-bottom: 28px;
+  }
+  .pills{
+    display:flex; gap: 28px; flex-wrap:wrap; justify-content:center;
+  }
+  .pill{
+    cursor:pointer;
+    width: 130px; height: 50px;
+    border-radius: 25px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Courier New', monospace;
+    font-size:0.8rem; letter-spacing:1px;
+    color:#fff; font-weight:bold;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position:relative;
+    border: 2px solid rgba(255,255,255,0.15);
+  }
+  .pill:focus-visible{ transform: scale(1.06); outline: 2px solid #fff; outline-offset: 4px; }
+  .pill-blue{
+    background: linear-gradient(90deg, #0a3d91, #1e6fe0);
+    box-shadow: 0 0 18px rgba(30,111,224,0.5), inset 0 0 10px rgba(255,255,255,0.15);
+  }
+  .pill-red{
+    background: linear-gradient(90deg, #910a0a, #e01e1e);
+    box-shadow: 0 0 18px rgba(224,30,30,0.5), inset 0 0 10px rgba(255,255,255,0.15);
+  }
+  .pill-hint, .pill-keys{
+    font-size: 0.7rem; letter-spacing:2px;
+    color: var(--text); opacity:0.6;
+    text-wrap: balance;
+  }
+  .pill-hint{ margin-top: 22px; }
+  .pill-keys{ margin-top: 8px; display:none; }
+  /* Keyboard shortcuts are only advertised where there is likely to be a keyboard. */
+  @media (hover:hover) and (pointer:fine){
+    .pill-keys{ display:block; }
+  }
+
+  @keyframes fadeIn{
+    from{ opacity:0; transform: translateY(6px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  /* Visitors who ask their device for less motion get a still page. */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{ animation: none !important; transition: none !important; }
+    .scan{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Pill selection screen: shown on a first visit, and again from "CHANGE PILL" in the footer -->
+<div id="pill-screen" role="dialog" aria-modal="true" aria-labelledby="pill-title" aria-describedby="pill-hint" tabindex="-1">
+  <div class="pill-prompt" aria-hidden="true">root@infra:~$ ./choose_reality.sh</div>
+  <h2 class="pill-title" id="pill-title">CHOOSE YOUR PILL</h2>
+  <div class="pills">
+    <button class="pill pill-blue" type="button" data-pill="blue" aria-label="Blue pill: keep the default green theme">BLUE PILL</button>
+    <button class="pill pill-red" type="button" data-pill="red" aria-label="Red pill: switch to a red theme">RED PILL</button>
+  </div>
+  <p class="pill-hint" id="pill-hint">BLUE = STAY IN THE GREEN SYSTEM &middot; RED = SEE HOW DEEP THE RABBIT HOLE GOES</p>
+  <p class="pill-keys" aria-hidden="true">KEYS: 1 = BLUE &middot; 2 = RED</p>
+</div>
+
+<canvas id="matrix" aria-hidden="true"></canvas>
+<div class="overlay-gradient" aria-hidden="true"></div>
+<canvas id="matrix-glow" aria-hidden="true"></canvas>
+
+<div id="site">
+  <header>
+    <h1><span aria-hidden="true">&#9608; </span>CtrlAltSsh.com</h1>
+    <p class="prompt">root@infra:~$ whoami</p>
+    <p class="whoami">Ibrahim Mkumba</p>
+    <p class="tagline">SYSTEMS ENGINEER · CLOUD · SECURITY+ · IT INFRASTRUCTURE</p>
+  </header>
+
+  <main>
+    <div id="view-container"></div>
+    <noscript>
+      <div class="rack" style="width:100%; max-width:480px;">
+        <div class="content-box">
+          <h3>JAVASCRIPT IS OFF</h3>
+          <p>The rack needs JavaScript to open. Until then:
+            <a href="https://www.linkedin.com/in/ibrahim-mkumba-mw">LinkedIn</a> ·
+            <a href="https://github.com/ibbzyUday">GitHub</a></p>
+        </div>
+      </div>
+    </noscript>
+  </main>
+
+  <footer>
+    <p class="status">DATACENTER-01 :: UPTIME NOMINAL :: ALL UNITS ONLINE</p>
+    <button class="ghost-btn" id="pill-switch" type="button" hidden>CHANGE PILL</button>
+  </footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ==========================================================
+   YOUR DETAILS — fill these in before publishing.
+   A unit whose value is empty is left out of the page, so a
+   visitor never sees a placeholder.
+   ========================================================== */
+const SITE = {
+  email: "",       // public contact address, e.g. "hello@ctrlaltssh.com"
+  resumeUrl: ""    // your resume PDF, e.g. "resume.pdf" uploaded next to this file
+};
+
+/* ==========================================================
+   RACK CONTENT
+   Navigation unit:  {label, sub, target}          -> opens another rack
+   Content unit:     {label, sub, content, link}   -> content is HTML, link is optional {href, text}
+   Web links open in a new tab automatically.
+   ========================================================== */
+const racks = {
+  home: {
+    label: "DATACENTER-01 / LANDING RACK",
+    units: [
+      {label:"ABOUT ME", sub:"IDENTITY.SYS", target:"about"},
+      {label:"PROJECTS", sub:"WORKLOADS.EXE", target:"projects"},
+      {label:"LAB", sub:"HOMELAB.VM", target:"lab"},
+      {label:"CERTIFICATIONS", sub:"CREDENTIALS.LOG", target:"certs"},
+      {label:"RESUME", sub:"CV.PDF", target:"resume"},
+      {label:"CONTACT", sub:"UPLINK.CONN", target:"contact"}
+    ]
+  },
+  about: {
+    label: "RACK-01 / ABOUT ME", title: "About",
+    units: [
+      {label:"OVERVIEW", sub:"PROFILE.TXT",
+       content:"IT infrastructure professional based in the Dallas-Irving area, currently at Aldridge. Background spans MSP support, enterprise escalation, and cloud migrations, with a focus on moving from L2 support into cloud/systems engineering."},
+      {label:"CORE STACK", sub:"SKILLS.SYS",
+       content:"Windows Server &amp; Active Directory · Hyper-V / VMware · AWS &amp; Azure · FortiGate · Veeam / Datto · PowerShell"}
+    ]
+  },
+  projects: {
+    label: "RACK-02 / PROJECTS", title: "Projects",
+    units: [
+      {label:"AWS MIGRATION", sub:"ON-PREM -> CLOUD",
+       content:"Migrated on-prem infrastructure to AWS — EC2, VPC, Route 53, S3, IAM."},
+      {label:"NETWORK RECOVERY", sub:"INCIDENT.LOG",
+       content:"Led reconfiguration and service recovery efforts across client networks during outage/escalation events."},
+      {label:"PORTFOLIO SITE", sub:"THIS.SITE",
+       content:"This site — a digital rack-themed portfolio built with HTML, CSS and vanilla JS, with a canvas matrix-style animated background."}
+    ]
+  },
+  lab: {
+    label: "RACK-03 / LAB", title: "Lab",
+    units: [
+      {label:"PROXMOX HOMELAB", sub:"HYPERVISOR.NODE",
+       content:"Self-hosted Proxmox environment used for VM sprawl testing, HA/failover experiments, and general infra tinkering."},
+      {label:"PFSENSE", sub:"FIREWALL.RULES",
+       content:"pfSense used for network segmentation, VLAN testing, and firewall rule experimentation in the lab."},
+      {label:"WIRESHARK", sub:"PACKET.CAP",
+       content:"Packet-level analysis for troubleshooting and learning traffic patterns across the lab network."}
+    ]
+  },
+  certs: {
+    label: "RACK-04 / CERTIFICATIONS", title: "Certifications",
+    units: [
+      {label:"SECURITY+", sub:"COMPTIA :: 2026",
+       content:"CompTIA Security+ — core security concepts, cryptography, threats, and network security fundamentals.",
+       link:{href:"https://www.credly.com/badges/994c0cbd-d572-4d21-a78a-097b962e46d2/linked_in_profile", text:"Verify credential"}},
+      {label:"GOOGLE CYBERSECURITY", sub:"GOOGLE :: 2025",
+       content:"Google Cybersecurity Professional Certificate.",
+       link:{href:"https://www.credly.com/badges/48f4cdca-9bd9-42a5-8980-8e85bb7a1cca/linked_in_profile", text:"Verify credential"}},
+      {label:"AZ-900", sub:"MICROSOFT :: 2024",
+       content:"Microsoft Azure Fundamentals.",
+       link:{href:"https://learn.microsoft.com/en-us/users/ibrahimmkumba-4464/credentials/c20f19ee47550b16", text:"Verify credential"}},
+      {label:"INTRO TO CYBER SECURITY", sub:"CISCO :: 2020",
+       content:"Cisco Introduction to Cyber Security.",
+       link:{href:"https://www.credly.com/badges/db2511b9-2243-4093-91ec-12fe01ee044c?source=linked_in_profile", text:"Verify credential"}},
+      {label:"CCNAv7 COURSE COMPLETION", sub:"CISCO NETWORKING ACADEMY :: 2020",
+       content:"Cisco Networking Academy — CCNAv7 Course Completion (not the standalone CCNA certification exam).",
+       link:{href:"https://www.credly.com/badges/838311a8-28b6-4c04-b594-25cff5f0fb74/linked_in_profile", text:"Verify credential"}}
+    ]
+  },
+  resume: {
+    label: "RACK-05 / RESUME", title: "Resume",
+    units: [
+      SITE.resumeUrl && {label:"DOWNLOAD PDF", sub:"RESUME.PDF",
+       link:{href:SITE.resumeUrl, text:"Download resume (PDF)", newTab:true}},
+      {label:"EXPERIENCE", sub:"WORKHISTORY.LOG",
+       content:"Aldridge (current) · Littlefish (MSP) · Senior Internet · Blantyre District Council — enterprise support, AD/GPO, virtualization, cloud migrations."}
+    ]
+  },
+  contact: {
+    label: "RACK-06 / CONTACT", title: "Contact",
+    units: [
+      {label:"LINKEDIN", sub:"UPLINK.SOCIAL",
+       link:{href:"https://www.linkedin.com/in/ibrahim-mkumba-mw", text:"linkedin.com/in/ibrahim-mkumba-mw"}},
+      SITE.email && {label:"EMAIL", sub:"SMTP.CONN",
+       link:{href:"mailto:" + SITE.email, text:SITE.email}},
+      {label:"GITHUB", sub:"REPO.LOG",
+       link:{href:"https://github.com/ibbzyUday", text:"github.com/ibbzyUday"}}
+    ]
+  }
+};
+
+/* ---------- Helpers ---------- */
+const $ = (sel, scope) => (scope || document).querySelector(sel);
+const root = document.documentElement;
+const STORE_KEY = 'ctrlaltssh-pill';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- Matrix rain background ---------- */
+const rain = (function(){
+  const canvas = $('#matrix');               // the rain itself
+  const ctx = canvas.getContext('2d');
+  const glowCanvas = $('#matrix-glow');      // the light the pointer adds on top of it
+  const glow = glowCanvas.getContext('2d');
+  const CHARS = "アカサタナハマヤラワ0123456789ABCDEF#$%&";
+  const FONT = 14;       // px per glyph cell
+  const STEP_MS = 45;    // one row of fall every 45 ms
+  const FADE = 0.08;     // how much of the trail fades on each step
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* How the rain answers the mouse or a finger: glyphs near the pointer light up and change,
+     and the light lingers for a moment behind it. */
+  const POINTER = {
+    enabled: true,     // false switches the whole effect off
+    reach: 0.14,       // radius of the lit area, as a share of the shorter screen edge (kept between 72 and 130 px)
+    strength: 0.9,     // peak brightness of a lit glyph, 0 to 1
+    afterglow: 220,    // ms for the wake behind the pointer to lose half its light
+    reveal: 0.6,       // how much code the light shows where no rain is falling (0 = it only brightens the rain)
+    haze: 0.09,        // faint pool of light under the pointer itself (0 = none)
+    bloom: 7,          // px of soft halo around the hottest glyphs (0 = none)
+    scramble: 3,       // character changes per second for a glyph right under the pointer (0 = none)
+    behindText: 0.3,   // the light is turned down to this share behind the title, rack heading and footer text
+    insideRack: 0.45   // ...and to this share in the gaps of the rack
+  };
+
+  /* BRIGHT[k] = how bright a glyph still is k steps after the rain drew it. */
+  const BRIGHT = [];
+  for (let k = 0; k < 64; k++) BRIGHT.push(Math.pow(1 - FADE, k));
+
+  let w = 0, h = 0, cols = 0, rows = 0;
+  let head = [];                        // per column: the row the next glyph lands on
+  let glyphAt = new Uint8Array(0);      // per cell: which character it holds
+  let bornAt = new Int32Array(0);       // per cell: the step on which the rain last drew it
+  let grain = new Uint8Array(0);        // per cell: a fixed random value that roughens the rim of the lit area
+  let heat = new Float32Array(0);       // per cell: how much pointer light it is holding, 0 to 1
+  let hot = [];                         // the cells that are holding light right now
+  let patchCols = 0, patchRows = 0;     // size of the glow canvas, in cells
+  let patchCol = 0, patchRow = 0;       // which cell its top-left corner sits on
+  let patchShown = false, patchDpr = 1;
+  let pool = null, poolSize = 0;        // the pool of light under the pointer, drawn once and stamped each frame
+  let stepNo = 0, raf = 0, last = 0, acc = 0, wanted = false;
+  let trail = '', ink = '', inkRgb = '', inkHot = '', paper = '';
+
+  const randomGlyph = () => (Math.random() * CHARS.length) | 0;
+  const brightness = k => { const age = stepNo - bornAt[k]; return age < 64 ? BRIGHT[age] : 0; };
+  const drawGlyph = (c2d, k, col, row) => c2d.fillText(CHARS[glyphAt[k]], col * FONT + FONT / 2, row * FONT + FONT / 2);
+
+  /* Colours are read from the theme once per theme change, not on every frame. */
+  function readTheme(){
+    const css = getComputedStyle(root);
+    const rgb = css.getPropertyValue('--bg-rgb').trim() || '2,4,2';
+    const next = css.getPropertyValue('--matrix').trim() || '#00ff66';
+    const changed = next !== ink;
+    ink = next;
+    inkHot = css.getPropertyValue('--text').trim() || '#c8ffdc';
+    inkRgb = css.getPropertyValue('--neon-rgb').trim() || '0,255,102';
+    trail = 'rgba(' + rgb + ',' + FADE + ')';
+    paper = 'rgb(' + rgb + ')';
+    return changed;
+  }
+
+  /* Give new columns a head somewhere random in its fall (or in the pause before it restarts)
+     and the trail it would have left by now, so the rain never starts as one flat line. */
+  function plant(fromCol){
+    for (let c = fromCol; c < cols; c++) {
+      head[c] = (Math.random() * (rows + 40)) | 0;
+      for (let k = 0; k < 40 && head[c] - 1 - k >= 0; k++) {
+        const r = head[c] - 1 - k;
+        if (r >= rows) continue;                          // still below the bottom edge
+        glyphAt[r * cols + c] = randomGlyph();
+        bornAt[r * cols + c] = stepNo - k;
+      }
+    }
+  }
+
+  /* Draw the rain as it stands right now. Used for the first frame, for new columns, after a
+     theme change, and it is the still picture for visitors who prefer reduced motion. */
+  function paint(fromCol){
+    if (!fromCol) ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = ink;
+    for (let r = 0; r < rows; r++) {
+      for (let c = fromCol; c < cols; c++) {
+        const b = brightness(r * cols + c);
+        if (b < 0.04) continue;
+        ctx.globalAlpha = b;
+        drawGlyph(ctx, r * cols + c, c, r);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function prepare(c2d, dpr){
+    c2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c2d.font = FONT + 'px monospace';
+    c2d.textAlign = 'center';
+    c2d.textBaseline = 'middle';
+  }
+
+  /* Size the canvases to the window. A height-only shrink is ignored (that is a phone address
+     bar sliding in and out), and whatever is already drawn is kept, so resizing never blanks or
+     restarts the rain. */
+  function fit(){
+    const nw = window.innerWidth, vh = window.innerHeight;
+    const widthChanged = nw !== w;
+    if (!widthChanged && vh <= h) return;
+    const nh = widthChanged ? vh : Math.max(vh, h);
+    let keep = null;
+    const oldW = w, oldH = h;
+    if (w && canvas.width && canvas.height) {
+      keep = document.createElement('canvas');
+      keep.width = canvas.width; keep.height = canvas.height;
+      keep.getContext('2d').drawImage(canvas, 0, 0);
+    }
+    w = nw; h = nh;
+    // Sharp on dense screens (full 2x on phones), but never more than ~3 million pixels to repaint per step.
+    const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(3e6 / (w * h))));
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    prepare(ctx, dpr);
+    if (keep) ctx.drawImage(keep, 0, 0, oldW, oldH);
+
+    // Rebuild the cell grid, carrying over what the surviving cells held. (With reduced motion
+    // nothing is carried over: the still picture is simply drawn afresh for the new size.)
+    const nCols = Math.ceil(w / FONT), nRows = Math.ceil(h / FONT), n = nCols * nRows;
+    const g2 = new Uint8Array(n), b2 = new Int32Array(n).fill(-1e6), n2 = new Uint8Array(n);
+    for (let k = 0; k < n; k++) { g2[k] = randomGlyph(); n2[k] = (Math.random() * 256) | 0; }
+    const carried = reduce.matches ? 0 : cols;
+    for (let r = 0; r < Math.min(rows, nRows); r++) {
+      for (let c = 0; c < Math.min(carried, nCols); c++) {
+        g2[r * nCols + c] = glyphAt[r * cols + c];
+        b2[r * nCols + c] = bornAt[r * cols + c];
+        n2[r * nCols + c] = grain[r * cols + c];
+      }
+    }
+    glyphAt = g2; bornAt = b2; grain = n2;
+    heat = new Float32Array(n); hot = [];
+    cols = nCols; rows = nRows; head.length = cols;
+
+    // The glow canvas is a patch that travels with the pointer, not a second full-screen layer:
+    // far fewer pixels to repaint and hand to the screen on every frame.
+    patchCols = Math.min(cols, PATCH);
+    patchRows = Math.min(rows, PATCH);
+    patchDpr = Math.min(dpr, 1.5);                        // light is soft anyway; no need for more
+    glowCanvas.width = Math.round(patchCols * FONT * patchDpr);
+    glowCanvas.height = Math.round(patchRows * FONT * patchDpr);
+    glowCanvas.style.width = patchCols * FONT + 'px';
+    glowCanvas.style.height = patchRows * FONT + 'px';
+    prepare(glow, patchDpr);
+    pool = null;                                          // its size depends on the screen: redraw on next use
+    showPatch(false);
+    if (carried < cols) { plant(carried); paint(carried); }      // new columns get rain straight away
+  }
+
+  function step(){
+    stepNo++;
+    ctx.fillStyle = trail;
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = ink;
+    for (let c = 0; c < cols; c++) {
+      const r = head[c];
+      if (r < rows) {
+        const k = r * cols + c;
+        glyphAt[k] = randomGlyph();
+        bornAt[k] = stepNo;
+        drawGlyph(ctx, k, c, r);
+      }
+      if ((r + 1) * FONT > h && Math.random() > 0.975) head[c] = -1;
+      head[c]++;
+    }
+    // Lit glyphs change character now and then. Doing it here, on the rain's own beat, means
+    // the rain canvas is still only redrawn once per step.
+    const flip = POINTER.scramble * STEP_MS / 1000;
+    for (let j = 0; flip && j < hot.length; j++) {
+      const k = hot[j];
+      if (heat[k] < 0.3 || Math.random() >= flip * heat[k]) continue;
+      glyphAt[k] = randomGlyph();
+      const b = brightness(k);
+      if (b < 0.04) continue;                             // not visible in the rain itself: nothing to redraw there
+      const c = k % cols, r = (k - c) / cols;
+      ctx.fillStyle = paper;
+      ctx.fillRect(c * FONT, r * FONT, FONT, FONT);
+      ctx.fillStyle = ink;
+      ctx.globalAlpha = b;
+      drawGlyph(ctx, k, c, r);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /* ----- Pointer light ----- */
+  const PATCH = 44;                     // the glow canvas is at most this many cells wide and tall
+  const EDGE = 4;                       // light fades out over this many cells at the edge of the patch
+  const ptr = { x: 0, y: 0, fromX: 0, fromY: 0, at: -1e9, moved: false, fresh: true };
+  const core = [];                      // scratch list: this frame's brightest cells
+  let gain = 0;                         // eases the light in when the pointer starts moving
+  let zones = [], zonesAt = -1e9;       // where the light is turned down, and when that was measured
+  let drawnAt = -1e9, owed = 0;         // when the light was last redrawn, and the time that has passed since
+  let late = 0, lean = false;           // late frames seen while lit; whether this machine gets the lighter schedule
+
+  function point(x, y, touchedDown){
+    ptr.x = x; ptr.y = y; ptr.moved = true;
+    if (touchedDown) { ptr.fresh = true; gain = Math.max(gain, 0.7); }     // a tap lights up at once; a mouse eases in
+  }
+
+  function showPatch(on){
+    if (on === patchShown) return;
+    patchShown = on;
+    glowCanvas.style.display = on ? 'block' : 'none';      // while nothing is lit the layer does not exist
+  }
+
+  /* Where the light is turned down: tight boxes around text that sits straight on the rain,
+     and the rack, where only the gaps between units show the rain at all. */
+  function readZones(now){
+    if (now - zonesAt < 200) return;
+    zonesAt = now;
+    zones = [];
+    const range = document.createRange();
+    const textBox = function(selector){                    // one box around the text of everything that matches
+      const els = document.querySelectorAll(selector);
+      let box = null;
+      for (let i = 0; i < els.length; i++) {
+        range.selectNodeContents(els[i]);
+        const b = range.getBoundingClientRect();
+        if (!b.width || !b.height) continue;
+        if (!box) box = { left: b.left, right: b.right, top: b.top, bottom: b.bottom, dim: POINTER.behindText };
+        else { box.left = Math.min(box.left, b.left); box.right = Math.max(box.right, b.right); box.top = Math.min(box.top, b.top); box.bottom = Math.max(box.bottom, b.bottom); }
+      }
+      if (box) { box.left -= 12; box.right += 12; box.top -= 8; box.bottom += 8; zones.push(box); }
+    };
+    textBox('header h1, header p');
+    textBox('footer .status');
+    textBox('.rack-view:not([hidden]) .rack-label');
+    const rack = document.querySelector('.rack-view:not([hidden]) .rack');
+    if (rack) {
+      const b = rack.getBoundingClientRect();
+      zones.push({ left: b.left, right: b.right, top: b.top, bottom: b.bottom, dim: POINTER.insideRack });
+    }
+  }
+
+  /* The soft pool of light under the pointer. A gradient is slow to compute, so it is drawn
+     once into a small offscreen canvas and stamped from there on every frame. */
+  function makePool(radius){
+    poolSize = radius * 2.3;
+    const px = Math.max(2, Math.round(poolSize * patchDpr)), mid = px / 2;
+    pool = document.createElement('canvas');
+    pool.width = pool.height = px;
+    const p = pool.getContext('2d');
+    const shade = p.createRadialGradient(mid, mid, 0, mid, mid, mid);
+    for (let s = 0; s <= 8; s++) {                         // eased at both ends, so the pool has no visible rim
+      const t = s / 8, share = (1 - t * t) * (1 - t * t);
+      shade.addColorStop(t, 'rgba(' + inkRgb + ',' + (POINTER.haze * share).toFixed(4) + ')');
+    }
+    p.fillStyle = shade;
+    p.fillRect(0, 0, px, px);
+    // At the faint outer rim, rounding can leave pixels that have a little opacity but no colour,
+    // and those would darken the page slightly: a dim ring around the light. Give every pixel
+    // that has any opacity the full ink colour.
+    const ink3 = inkRgb.split(',').map(Number);
+    const img = p.getImageData(0, 0, px, px), d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3]) { d[i] = ink3[0]; d[i + 1] = ink3[1]; d[i + 2] = ink3[2]; }
+    }
+    p.putImageData(img, 0, 0);
+  }
+
+  /* Pour light into the cells around one point: full under the pointer, none at the rim. */
+  function stamp(px, py, radius, amount){
+    const c0 = Math.max(0, Math.floor((px - radius) / FONT)), c1 = Math.min(cols - 1, Math.floor((px + radius) / FONT));
+    const r0 = Math.max(0, Math.floor((py - radius) / FONT)), r1 = Math.min(rows - 1, Math.floor((py + radius) / FONT));
+    for (let r = r0; r <= r1; r++) {
+      const cy = r * FONT + FONT / 2, dy = cy - py;
+      for (let c = c0; c <= c1; c++) {
+        const cx = c * FONT + FONT / 2, dx = cx - px, d2 = dx * dx + dy * dy;
+        if (d2 >= radius * radius) continue;
+        const k = r * cols + c;
+        let t = 1 - Math.sqrt(d2) / radius;
+        t = t * t * (3 - 2 * t);                                   // soft edge
+        let v = t * amount * (0.72 + 0.28 * grain[k] / 255);       // grain keeps the rim from being a perfect circle
+        for (let z = 0; z < zones.length; z++) {
+          const q = zones[z];
+          if (cx > q.left && cx < q.right && cy > q.top && cy < q.bottom) { v *= q.dim; break; }
+        }
+        if (v < 0.03 || v <= heat[k]) continue;
+        if (!heat[k]) hot.push(k);
+        heat[k] = v;
+      }
+    }
+  }
+
+  function goDark(){
+    for (let j = 0; j < hot.length; j++) heat[hot[j]] = 0;
+    hot.length = 0;
+    gain = 0; owed = 0;
+    showPatch(false);
+  }
+
+  /* How much a cell is dimmed for sitting near the edge of the patch (1 = not at all). A side of
+     the patch that already reaches the edge of the screen has nothing to fade into. */
+  function edgeFade(lc, lr){
+    let e = 1;
+    if (patchCol > 0) e = Math.min(e, (lc + 0.5) / EDGE);
+    if (patchCol + patchCols < cols) e = Math.min(e, (patchCols - lc - 0.5) / EDGE);
+    if (patchRow > 0) e = Math.min(e, (lr + 0.5) / EDGE);
+    if (patchRow + patchRows < rows) e = Math.min(e, (patchRows - lr - 0.5) / EDGE);
+    return e;
+  }
+
+  /* Runs every frame, and does nothing at all unless the pointer moved or light is still fading. */
+  function react(now, dt){
+    if (!ptr.moved && !hot.length) return;
+    const radius = Math.max(72, Math.min(130, Math.min(w, h) * POINTER.reach));
+
+    if (ptr.moved) {
+      ptr.moved = false;
+      const dx = ptr.x - ptr.fromX, dy = ptr.y - ptr.fromY, far = Math.sqrt(dx * dx + dy * dy);
+      // A new touch, or the pointer coming back from somewhere else: no streak from the old spot.
+      const jumped = ptr.fresh || now - ptr.at > 150 || far > radius * 3;
+      ptr.fresh = false; ptr.at = now;
+      gain = Math.min(1, gain + dt / 120);
+      readZones(now);
+      const n = jumped ? 1 : Math.max(1, Math.min(8, Math.ceil(far / (radius * 0.45))));
+      for (let s = 1; s <= n; s++) {
+        if (jumped) stamp(ptr.x, ptr.y, radius, gain);
+        else stamp(ptr.fromX + dx * s / n, ptr.fromY + dy * s / n, radius, gain);
+      }
+      ptr.fromX = ptr.x; ptr.fromY = ptr.y;
+    } else if (now - ptr.at > 250) {
+      gain = Math.max(0, gain - dt / 300);
+    }
+
+    // Redraw the light about 60 times a second at most, however fast the screen refreshes, and
+    // about 30 times a second on a machine that has shown it cannot keep up.
+    owed += dt;
+    if (!lean) {
+      late = dt > 24 ? late + 1 : Math.max(0, late - 0.25);
+      if (late > 20) lean = true;
+    }
+    if (now - drawnAt < (lean ? 30 : 10)) return;
+    drawnAt = now;
+    const elapsed = owed;
+    owed = 0;
+
+    // Keep the patch centred on the pointer, snapped to the cell grid so its glyphs land exactly
+    // on the rain's. Where the patch is as wide or tall as the screen it simply stays put.
+    const pc = patchCols >= cols ? 0 : Math.round(ptr.x / FONT - patchCols / 2);
+    const pr = patchRows >= rows ? 0 : Math.round(ptr.y / FONT - patchRows / 2);
+    if (pc !== patchCol || pr !== patchRow || !patchShown) {
+      patchCol = pc; patchRow = pr;
+      glowCanvas.style.transform = 'translate(' + pc * FONT + 'px,' + pr * FONT + 'px)';
+    }
+
+    glow.clearRect(0, 0, patchCols * FONT, patchRows * FONT);
+    if (POINTER.haze && gain > 0.01) {                     // the pool of light under the pointer
+      if (!pool) makePool(radius);
+      // Placed on whole pixels, so it is a plain copy with no resampling.
+      const px = Math.round((ptr.x - patchCol * FONT - poolSize / 2) * patchDpr) / patchDpr;
+      const py = Math.round((ptr.y - patchRow * FONT - poolSize / 2) * patchDpr) / patchDpr;
+      glow.globalAlpha = gain;
+      glow.drawImage(pool, px, py, pool.width / patchDpr, pool.height / patchDpr);
+    }
+    const keep = Math.pow(0.5, elapsed / POINTER.afterglow);
+    let n = 0;
+    core.length = 0;
+    glow.fillStyle = ink;
+    for (let j = 0; j < hot.length; j++) {
+      const k = hot[j], v = heat[k] * keep;
+      if (v < 0.02) { heat[k] = 0; continue; }             // this cell has gone dark again
+      heat[k] = v; hot[n++] = k;
+      const c = k % cols, lc = c - patchCol, lr = (k - c) / cols - patchRow;
+      if (lc < 0 || lr < 0 || lc >= patchCols || lr >= patchRows) continue;       // lit, but outside the patch
+      const b = brightness(k), g = grain[k] / 255;
+      const latent = POINTER.reveal * g * Math.sqrt(g);    // most hidden glyphs stay faint, a few catch the light
+      const alpha = POINTER.strength * v * edgeFade(lc, lr) * (latent + (1 - latent) * Math.sqrt(b));
+      if (alpha < 0.03) continue;                          // too faint to see: not worth drawing
+      glow.globalAlpha = alpha;
+      drawGlyph(glow, k, lc, lr);
+      if (v > 0.5 && b > 0.15) core.push(k);
+    }
+    hot.length = n;
+    if (core.length) {                                     // the hottest glyphs go from neon to near-white, with a halo
+      glow.fillStyle = inkHot;
+      glow.shadowColor = ink;
+      glow.shadowBlur = POINTER.bloom * patchDpr;         // (shadow blur is measured in canvas pixels)
+      for (let j = 0; j < core.length; j++) {
+        const k = core[j], c = k % cols, lc = c - patchCol, lr = (k - c) / cols - patchRow;
+        glow.globalAlpha = POINTER.strength * (heat[k] - 0.5) * 2 * brightness(k) * edgeFade(lc, lr);
+        drawGlyph(glow, k, lc, lr);
+      }
+      glow.shadowBlur = 0;
+    }
+    glow.globalAlpha = 1;
+    showPatch(n > 0);
+  }
+
+  if (POINTER.enabled) {
+    const quiet = { passive: true };
+    window.addEventListener('pointermove', function(e){ if (e.pointerType !== 'touch') point(e.clientX, e.clientY, false); }, quiet);
+    window.addEventListener('touchstart', function(e){ const t = e.touches[0]; if (t) point(t.clientX, t.clientY, true); }, quiet);
+    window.addEventListener('touchmove', function(e){ const t = e.touches[0]; if (t) point(t.clientX, t.clientY, false); }, quiet);
+  }
+
+  /* requestAnimationFrame stops by itself while the tab is in the background. */
+  function loop(now){
+    raf = requestAnimationFrame(loop);
+    const dt = Math.max(0, Math.min(now - last, STEP_MS * 4));
+    last = now;
+    acc += dt;
+    while (acc >= STEP_MS) { step(); acc -= STEP_MS; }
+    react(now, dt);
+  }
+
+  /* Animate only when it can be seen and the visitor has not asked for reduced motion. */
+  function sync(){
+    const run = wanted && !reduce.matches;
+    if (run && !raf) { last = performance.now(); acc = 0; raf = requestAnimationFrame(loop); }
+    if (!run && raf) { cancelAnimationFrame(raf); raf = 0; goDark(); ptr.moved = false; }
+  }
+
+  let resizeQueued = false;
+  window.addEventListener('resize', function(){
+    if (resizeQueued) return;
+    resizeQueued = true;
+    requestAnimationFrame(function(){ resizeQueued = false; fit(); });
+  });
+
+  if (reduce.addEventListener) reduce.addEventListener('change', sync);
+  else if (reduce.addListener) reduce.addListener(sync);
+
+  readTheme();
+  fit();
+
+  return {
+    resume: function(){ wanted = true; sync(); },
+    pause: function(){ wanted = false; sync(); },
+    retheme: function(){ if (readTheme()) { paint(0); goDark(); pool = null; } }
+  };
+})();
+
+/* ---------- Racks: built once, then one is shown at a time ---------- */
+const container = $('#view-container');
+const BASE_TITLE = document.title;
+
+function linkHtml(link){
+  const newTab = link.newTab || /^https?:/i.test(link.href);
+  return '<a href="' + esc(link.href) + '"' +
+    (newTab ? ' target="_blank" rel="noopener noreferrer"' : '') + '>' +
+    esc(link.text) + (newTab ? '<span aria-hidden="true"> &#8599;</span>' : '') + '</a>';
+}
+
+function unitHtml(u){
+  if (u.target) {
+    return '<a class="unit" href="#' + esc(u.target) + '">' +
+      '<span><span class="unit-label">' + esc(u.label) + '</span>' +
+      '<span class="unit-sub" aria-hidden="true">' + esc(u.sub) + '</span></span>' +
+      '<span class="led-row" aria-hidden="true"><span class="led"></span><span class="led"></span><span class="led"></span></span>' +
+      '</a>';
+  }
+  return '<div class="content-box">' +
+    '<h3>' + esc(u.label) + ' <span class="unit-sub">' + esc(u.sub) + '</span></h3>' +
+    '<p>' + (u.content || '') + (u.content && u.link ? ' ' : '') + (u.link ? linkHtml(u.link) : '') + '</p>' +
+    '</div>';
+}
+
+container.innerHTML = Object.keys(racks).map(function(key){
+  const rack = racks[key];
+  const units = rack.units.filter(Boolean).map(unitHtml).join('');
+  return '<section class="rack-view" data-rack="' + key + '" hidden>' +
+    (key === 'home' ? '' : '<a class="back-btn" href="#home"><span aria-hidden="true">&larr; </span>BACK TO LANDING RACK</a>') +
+    '<div class="rack">' +
+      '<div class="scan" aria-hidden="true"><div class="scanline"></div></div>' +
+      '<h2 class="rack-label" tabindex="-1">' + esc(rack.label) + '</h2>' +
+      (key === 'home' ? '<nav aria-label="Sections">' + units + '</nav>' : units) +
+    '</div>' +
+  '</section>';
+}).join('');
+
+const views = Array.prototype.slice.call(container.querySelectorAll('.rack-view'));
+let current = null;
+
+/* The address decides which rack is open (#certs, #contact ...), so the browser's Back button,
+   reloads and shared links all work. */
+function rackFromHash(){
+  const key = location.hash.slice(1);
+  return Object.prototype.hasOwnProperty.call(racks, key) ? key : 'home';
+}
+
+function show(key, moveFocus){
+  if (current && current.dataset.rack === key) return;
+  current = views.filter(function(v){ return v.dataset.rack === key; })[0];
+  views.forEach(function(v){ v.hidden = v !== current; });
+  document.title = key === 'home' ? BASE_TITLE : racks[key].title + ' | CtrlAltSsh';
+  if (moveFocus) {
+    if (current.getBoundingClientRect().top < 0) current.scrollIntoView();
+    $('.rack-label', current).focus({preventScroll:true});
+  }
+}
+
+/* Rack links are ordinary #links, so they work with the keyboard, middle-click and "copy link".
+   A plain click is handled here directly so the rack still opens inside previews and embeds
+   that don't let a page change its own address. */
+container.addEventListener('click', function(e){
+  const link = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+  if (!link || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const key = link.getAttribute('href').slice(1);
+  if (!Object.prototype.hasOwnProperty.call(racks, key)) return;
+  e.preventDefault();
+  try { history.pushState(null, '', '#' + key); } catch (err) {}
+  show(key, true);
+});
+window.addEventListener('popstate', function(){ show(rackFromHash(), true); });     // Back / Forward
+window.addEventListener('hashchange', function(){ show(rackFromHash(), true); });   // address edited by hand
+show(rackFromHash(), false);
+
+/* ---------- Pill selection ---------- */
+const gate = $('#pill-screen');
+const site = $('#site');
+const pills = Array.prototype.slice.call(gate.querySelectorAll('.pill'));
+let gateTimer = 0, returnFocus = null;
+
+const gateIsOpen = () => root.classList.contains('gate-open') && !gate.classList.contains('gone');
+const currentPill = () => root.getAttribute('data-theme') === 'red' ? 'red' : 'blue';
+
+function setTheme(pill){
+  if (pill === 'red') root.setAttribute('data-theme', 'red');
+  else root.removeAttribute('data-theme');
+  try { localStorage.setItem(STORE_KEY, pill); } catch (e) {}
+  const meta = $('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', getComputedStyle(root).getPropertyValue('--bg').trim());
+  rain.retheme();
+}
+
+function openGate(returnTo){
+  clearTimeout(gateTimer);
+  returnFocus = returnTo || null;
+  gate.classList.remove('gone');
+  root.classList.add('gate-open', 'gate-lock');
+  site.inert = true;                          // nothing behind the pill screen can be tabbed to or clicked
+  site.setAttribute('aria-hidden', 'true');
+  rain.pause();                               // no point animating behind an opaque screen
+  gate.focus({preventScroll:true});
+}
+
+function closeGate(pill){
+  if (!gateIsOpen()) return;
+  setTheme(pill || currentPill());
+  site.inert = false;
+  site.removeAttribute('aria-hidden');
+  root.classList.remove('gate-lock');         // scrollbar comes back while the screen is still opaque
+  gate.classList.add('gone');                 // fades out
+  rain.resume();
+  (returnFocus || $('.rack-label', current)).focus({preventScroll:true});
+  gateTimer = setTimeout(function(){
+    root.classList.remove('gate-open');
+    gate.classList.remove('gone');
+  }, 650);
+}
+
+pills.forEach(function(btn){
+  btn.addEventListener('click', function(){ closeGate(btn.dataset.pill); });
+});
+const pillSwitch = $('#pill-switch');
+pillSwitch.hidden = false;                    // only offered once the script that powers it is running
+pillSwitch.addEventListener('click', function(){ openGate(pillSwitch); });
+
+document.addEventListener('keydown', function(e){
+  if (!gateIsOpen() || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key === '1') { e.preventDefault(); closeGate('blue'); }
+  else if (e.key === '2') { e.preventDefault(); closeGate('red'); }
+  else if (e.key === 'Escape') { closeGate(); }             // keep the current theme
+  else if (e.key === 'Tab') {                               // keep Tab inside the pill screen
+    const first = pills[0], last = pills[pills.length - 1], active = document.activeElement;
+    if (e.shiftKey && (active === first || active === gate)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+  }
+});
+
+if (root.classList.contains('gate-open')) openGate(null);
+else rain.resume();
+
+})();
+</script>
+</body>
+</html>
